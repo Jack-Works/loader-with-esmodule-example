@@ -1,0 +1,9 @@
+@media screen and (prefers-color-scheme: dark) {
+    body {
+        background: black;
+        color: white;
+    }
+}
+a {
+    color: cyan;
+}
