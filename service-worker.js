@@ -51,3 +51,14 @@ export default container`
 Loader.add(
     new Loader('/json-module-loader.js', async res => `export default JSON.parse(${JSON.stringify(await res.text())})`)
 )
+globalThis.window = globalThis
+importScripts('https://unpkg.com/marked@0.7.0/marked.min.js')
+
+Loader.add(
+    new Loader(
+        '/markdown-loader.js',
+        async res => `const container = document.createElement('p')
+container.innerHTML = ${JSON.stringify(marked(await res.text()))}
+export default container`
+    )
+)
