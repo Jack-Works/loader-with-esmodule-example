@@ -47,3 +47,7 @@ container.replace(${JSON.stringify(await res.text())})
 export default container`
     )
 )
+
+Loader.add(
+    new Loader('/json-module-loader.js', async res => `export default JSON.parse(${JSON.stringify(await res.text())})`)
+)
