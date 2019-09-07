@@ -9,12 +9,13 @@ const $module = Symbol('System JS module')
  * @type {Map<string, Module>}
  */
 const LoadedModules = new Map()
+
 class Module {
     /**
      * @param {string} src
      */
     constructor(src) {
-        this.src = src
+        this.src = src = resolveImportMap(src)
         if (LoadedModules.has(src)) return LoadedModules.get(src)
         LoadedModules.set(src, this)
     }
@@ -31,10 +32,13 @@ class Module {
             },
             Object.freeze({
                 meta: Object.freeze({ url: new URL(this.src).toJSON() }),
-                import: src =>
-                    fetchFile(src)
+                import: src => {
+                    const cached = LoadedModules.get(resolveImportMap(new URL(src, this.src)))
+                    if (cached) return Promise.resolve(cached)
+                    return fetchFile(src)
                         .then(code => loadModule(new URL(src, this.src).toJSON(), code))
                         .then(x => x[$exports])
+                }
             })
         )
     }
@@ -43,8 +47,19 @@ class Module {
      */
     static execute(self) {
         for (const index in self.dependencies) {
-            self[$module].setters[index] = loadModule(new URL(dep, src).toJSON(), SyncXHR(src))
+            const waitForImport = resolveImportMap(self.dependencies[index])
+            const currentFile = self.src
+            const resolvedImportPath = new URL(waitForImport, currentFile).toJSON()
+            const cache = LoadedModules.get(resolvedImportPath)
+            if (cache) {
+                self[$module].setters[index](cache[$exports])
+            } else {
+                const nextModule = loadModule(resolvedImportPath, SyncXHR(resolvedImportPath))
+                this.execute(nextModule)
+                self[$module].setters[index](nextModule[$exports])
+            }
         }
+        console.log('Executing', self.src)
         self[$module].execute()
         return self[$exports]
     }
@@ -83,6 +98,26 @@ export default Module.execute(loadModule(entryPoint, SyncXHR(entryPoint))).defau
  */
 function transpileModuleToSystemJS(source) {
     return ts.transpileModule(source, {
-        compilerOptions: { module: ts.ModuleKind.System, target: ts.ScriptTarget.Latest }
+        compilerOptions: {
+            module: ts.ModuleKind.System,
+            target: ts.ScriptTarget.Latest,
+            jsx: ts.JsxEmit.React
+        }
     })
+}
+
+/**
+ * @param {string} src
+ */
+function resolveImportMap(src) {
+    const script = document.querySelector('script[type="importmap"]')
+    if (!script) return src
+    try {
+        const map = JSON.parse(script.innerHTML).imports
+        if (map[src]) return map[src][0]
+        return src
+    } catch (e) {
+        console.warn('Parsing import map failed!', e)
+        return src
+    }
 }

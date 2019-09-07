@@ -5,12 +5,15 @@ export function SyncXHR(src) {
     const req = new XMLHttpRequest()
     req.open('GET', src, false)
     req.send(null)
+    if (req.status > 399) throw new Error(`Load ${src} failed`)
     return req.responseText
 }
 
 export function fetchFile(src) {
     if (typeof src !== 'string') return Promise.reject('URL must be a string')
-    return fetch(src).then(x => x.text())
+    return fetch(src)
+        .then(x => (x.ok ? x : Promise.reject(new Error('Load ' + src + ' failed'))))
+        .then(x => x.text())
 }
 
 /**
