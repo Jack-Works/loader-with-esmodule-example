@@ -1,9 +1,9 @@
-import article from './markdown-loader.js?src=./article.md'
+import README from './markdown-loader.js?src=./README.md'
 import css from './css-module-loader.js?src=./style.css'
 import tsconfig from './json-module-loader.js?src=./tsconfig.json'
 
 console.log('Loaded by JSON import', tsconfig)
-document.body.appendChild(document.createElement('div')).appendChild(article)
+document.body.appendChild(document.createElement('div')).appendChild(README)
 document.adoptedStyleSheets = [css]
 
 navigator.serviceWorker
