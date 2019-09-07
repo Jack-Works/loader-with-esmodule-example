@@ -91,6 +91,9 @@ Loader.add(
 )
 function importTransformer(baseURL) {
     return context => {
+        /**
+         * @param {typeof import('./node_modules/typescript/lib/typescript').Node} node
+         */
         function visit(node) {
             if (ts.isImportDeclaration(node)) {
                 let nextModuleSpecifier
@@ -113,12 +116,67 @@ function importTransformer(baseURL) {
                     node.importClause,
                     nextModuleSpecifier
                 )
-            } else if (ts.isImportClause(node)) {
-                console.log(node.name, node.namedBindings)
-                return ts.createImportClause(node.name, node.namedBindings)
+            } else if (ts.isCallExpression(node)) {
+                if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+                    return transformDynamicImport(node.arguments, baseURL)
+                }
             }
             return ts.visitEachChild(node, child => visit(child), context)
         }
         return node => ts.visitNode(node, visit)
     }
+}
+function transformDynamicImport(args, baseURL) {
+    return ts.createCall(ts.createToken(ts.SyntaxKind.ImportKeyword), undefined, [
+        ts.createCall(
+            ts.createParen(
+                ts.createArrowFunction(
+                    undefined,
+                    undefined,
+                    [
+                        ts.createParameter(
+                            undefined,
+                            undefined,
+                            undefined,
+                            ts.createIdentifier('x'),
+                            undefined,
+                            undefined,
+                            undefined
+                        )
+                    ],
+                    undefined,
+                    ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+                    ts.createConditional(
+                        ts.createBinary(
+                            ts.createCall(
+                                ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')),
+                                undefined,
+                                [ts.createStringLiteral('.')]
+                            ),
+                            ts.createToken(ts.SyntaxKind.BarBarToken),
+                            ts.createCall(
+                                ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')),
+                                undefined,
+                                [ts.createStringLiteral('/')]
+                            )
+                        ),
+                        ts.createBinary(
+                            ts.createStringLiteral('/typescript-loader.js?src='),
+                            ts.createToken(ts.SyntaxKind.PlusToken),
+                            ts.createPropertyAccess(
+                                ts.createNew(ts.createIdentifier('URL'), undefined, [
+                                    ts.createIdentifier('x'),
+                                    ts.createStringLiteral(baseURL)
+                                ]),
+                                ts.createIdentifier('pathname')
+                            )
+                        ),
+                        ts.createIdentifier('x')
+                    )
+                )
+            ),
+            undefined,
+            args
+        )
+    ])
 }
