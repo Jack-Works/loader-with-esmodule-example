@@ -5,3 +5,7 @@ import tsconfig from './json-module-loader.js?src=./tsconfig.json'
 console.log('Loaded by JSON import', tsconfig)
 document.body.appendChild(document.createElement('div')).appendChild(article)
 document.adoptedStyleSheets = [css]
+
+navigator.serviceWorker.register('./service-worker.js', {}).then(sw => {
+    console.log('Service worker registered!')
+})
