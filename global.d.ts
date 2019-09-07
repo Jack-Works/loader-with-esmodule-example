@@ -3,3 +3,4 @@ declare module 'https://cdn.pika.dev/remarkable/v2' {
         render(markdown: string): string
     }
 }
+declare const ts: typeof import('./node_modules/typescript/lib/typescript')

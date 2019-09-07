@@ -1,7 +1,9 @@
 import README from './markdown-loader.js?src=./README.md'
 import css from './css-module-loader.js?src=./style.css'
 import tsconfig from './json-module-loader.js?src=./tsconfig.json'
+import * as ts from './typescript-loader.js?src=./typescript-test/index.ts'
 
+console.log('Exports from ./typescript-test/index.ts', ts)
 console.log('Loaded by JSON import', tsconfig)
 document.body.appendChild(document.createElement('div')).appendChild(README)
 document.adoptedStyleSheets = [css]
