@@ -1,187 +1,107 @@
-// Modified from https://gist.github.com/developit/689aa4415bd688f3fce923cb8ae9abe7#file-polyfill-js
-// in your ServiceWorker: importScripts('polyfill.js')
-
+"use strict";
 /**
- * @param {URL} url
- * @param {Loader} loader
+ * This file (service-worker.js) is compiled from ./service-worker.ts
  */
 async function loadLoader(url, loader) {
-    const request = await fetch(url.searchParams.get('src'))
-    if (!request.ok) return request
-    const file = await loader.transpiler(request)
-    const headers = new Headers(request.headers)
-    headers.set('content-type', 'application/javascript')
-    headers.set('content-length', file.length)
-    return new Response(file, { headers })
+    const request = await fetch(url.searchParams.get('src'));
+    if (!request.ok)
+        return request;
+    const file = await loader.transpiler(request);
+    const headers = new Headers(request.headers);
+    headers.set('content-type', 'application/javascript');
+    headers.set('content-length', file.length.toString());
+    return new Response(file, { headers });
 }
-addEventListener('fetch', e => {
-    const url = new URL(e.request.url)
-    if (url.origin !== location.origin) return
-    for (const loader of Loader.loaders) {
-        if (url.pathname === loader.fallbackURL) {
-            e.respondWith(loadLoader(url, loader))
+function init() {
+    this.addEventListener('fetch', e => {
+        const url = new URL(e.request.url);
+        if (url.origin !== location.origin)
+            return;
+        for (const loader of Loader.loaders) {
+            if (url.pathname === loader.fallbackURL) {
+                e.respondWith(loadLoader(url, loader));
+            }
         }
-    }
-})
-
+    });
+}
 class Loader {
     /**
-     * @param {string} fallbackURL The fallback URL
-     * @param {(res: Response) => Promise<string>} transpiler The transpiler
+     * @param fallbackURL The fallback URL
+     * @param transpiler The transpiler
      */
     constructor(fallbackURL, transpiler) {
-        this.fallbackURL = fallbackURL
-        this.transpiler = transpiler
+        this.fallbackURL = fallbackURL;
+        this.transpiler = transpiler;
     }
-    /**
-     * @type {Loader[]}
-     */
-    static loaders = []
-    /**
-     * @param {Loader} loader
-     */
     static add(loader) {
-        this.loaders.push(loader)
+        this.loaders.push(loader);
     }
 }
-
-Loader.add(
-    new Loader(
-        '/loaders/css-module-loader.js',
-        async res =>
-            `const container = new CSSStyleSheet()
+Loader.loaders = [];
+Loader.add(new Loader('/loaders/css-module-loader.js', async (res) => `const container = new CSSStyleSheet()
 container.replace(${JSON.stringify(await res.text())})
-export default container`
-    )
-)
-
-Loader.add(
-    new Loader(
-        '/loaders/json-module-loader.js',
-        async res => `export default JSON.parse(${JSON.stringify(await res.text())})`
-    )
-)
-globalThis.window = globalThis
-importScripts('https://unpkg.com/marked@0.7.0/marked.min.js')
-
-Loader.add(
-    new Loader(
-        '/loaders/markdown-loader.js',
-        async res => `const container = document.createElement('p')
+export default container`));
+Loader.add(new Loader('/loaders/json-module-loader.js', async (res) => `export default JSON.parse(${JSON.stringify(await res.text())})`));
+Object.assign(globalThis, { window: globalThis, process: { argv: [] } });
+importScripts('https://unpkg.com/marked@0.7.0/marked.min.js');
+Loader.add(new Loader('/loaders/markdown-loader.js', async (res) => `const container = document.createElement('p')
 container.innerHTML = ${JSON.stringify(marked(await res.text()))}
-export default container`
-    )
-)
-
-globalThis.process = {
-    argv: []
-}
-importScripts('https://www.unpkg.com/typescript@3.6.2/lib/typescript.js')
-const TypeScriptLoaderPath = '/loaders/typescript-loader.js'
-Loader.add(
-    new Loader(
-        TypeScriptLoaderPath,
-        async res =>
-            ts.transpileModule(await res.text(), {
-                compilerOptions: {
-                    module: ts.ModuleKind.ESNext,
-                    jsx: ts.JsxEmit.React,
-                    allowJs: true,
-                    target: ts.ScriptTarget.ESNext
-                },
-                fileName: res.url,
-                transformers: { before: [importTransformer(res.url)] }
-            }).outputText
-    )
-)
-function importTransformer(baseURL) {
-    return context => {
-        /**
-         * @param {typeof import('./node_modules/typescript/lib/typescript').Node} node
-         */
-        function visit(node) {
-            if (ts.isImportDeclaration(node)) {
-                let nextModuleSpecifier
-                if (ts.isStringLiteral(node.moduleSpecifier)) {
-                    if (node.moduleSpecifier.text[0] === '/' || node.moduleSpecifier.text[0] === '.') {
-                        nextModuleSpecifier = ts.createStringLiteral(
-                            TypeScriptLoaderPath + '?src=' + new URL(node.moduleSpecifier.text, baseURL)
-                        )
-                    } else {
-                        // unknown source
-                        // like "@pika/react"
-                        nextModuleSpecifier = node.moduleSpecifier
-                    }
-                } else {
-                    throw new Error('Invalid module specifier')
+export default container`));
+importScripts('https://www.unpkg.com/typescript@3.6.2/lib/typescript.js');
+const TypeScriptLoaderPath = '/loaders/typescript-loader.js';
+Loader.add(new Loader(TypeScriptLoaderPath, async (res) => ts.transpileModule(await res.text(), {
+    compilerOptions: {
+        module: ts.ModuleKind.ESNext,
+        jsx: ts.JsxEmit.React,
+        allowJs: true,
+        target: ts.ScriptTarget.ESNext
+    },
+    fileName: res.url,
+    transformers: {
+        before: [
+            context => {
+                const visit = createReplacer(context, res.url);
+                return node => ts.visitNode(node, visit);
+            }
+        ]
+    }
+}).outputText));
+function createReplacer(context, baseURL) {
+    return function visit(node) {
+        if (ts.isImportDeclaration(node)) {
+            let nextModuleSpecifier;
+            if (ts.isStringLiteral(node.moduleSpecifier)) {
+                if (node.moduleSpecifier.text[0] === '/' || node.moduleSpecifier.text[0] === '.') {
+                    nextModuleSpecifier = ts.createStringLiteral(TypeScriptLoaderPath + '?src=' + new URL(node.moduleSpecifier.text, baseURL));
                 }
-                return ts.createImportDeclaration(
-                    node.decorators,
-                    node.modifiers,
-                    node.importClause,
-                    nextModuleSpecifier
-                )
-            } else if (ts.isCallExpression(node)) {
-                if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-                    return transformDynamicImport(node.arguments, baseURL)
+                else {
+                    // unknown source
+                    // like "@pika/react"
+                    nextModuleSpecifier = node.moduleSpecifier;
                 }
             }
-            return ts.visitEachChild(node, child => visit(child), context)
+            else {
+                throw new Error('Invalid module specifier');
+            }
+            return ts.createImportDeclaration(node.decorators, node.modifiers, node.importClause, nextModuleSpecifier);
         }
-        return node => ts.visitNode(node, visit)
-    }
+        else if (ts.isCallExpression(node)) {
+            if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+                return transformDynamicImport(node.arguments, baseURL);
+            }
+        }
+        return ts.visitEachChild(node, child => visit(child), context);
+    };
 }
 function transformDynamicImport(args, baseURL) {
-    return ts.createCall(ts.createToken(ts.SyntaxKind.ImportKeyword), undefined, [
-        ts.createCall(
-            ts.createParen(
-                ts.createArrowFunction(
-                    undefined,
-                    undefined,
-                    [
-                        ts.createParameter(
-                            undefined,
-                            undefined,
-                            undefined,
-                            ts.createIdentifier('x'),
-                            undefined,
-                            undefined,
-                            undefined
-                        )
-                    ],
-                    undefined,
-                    ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-                    ts.createConditional(
-                        ts.createBinary(
-                            ts.createCall(
-                                ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')),
-                                undefined,
-                                [ts.createStringLiteral('.')]
-                            ),
-                            ts.createToken(ts.SyntaxKind.BarBarToken),
-                            ts.createCall(
-                                ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')),
-                                undefined,
-                                [ts.createStringLiteral('/')]
-                            )
-                        ),
-                        ts.createBinary(
-                            ts.createStringLiteral(TypeScriptLoaderPath + '?src='),
-                            ts.createToken(ts.SyntaxKind.PlusToken),
-                            ts.createPropertyAccess(
-                                ts.createNew(ts.createIdentifier('URL'), undefined, [
-                                    ts.createIdentifier('x'),
-                                    ts.createStringLiteral(baseURL)
-                                ]),
-                                ts.createIdentifier('pathname')
-                            )
-                        ),
-                        ts.createIdentifier('x')
-                    )
-                )
-            ),
-            undefined,
-            args
-        )
-    ])
+    // @ts-ignore
+    const importToken = ts.createToken(ts.SyntaxKind.ImportKeyword);
+    return ts.createCall(importToken, undefined, [
+        ts.createCall(ts.createParen(ts.createArrowFunction(undefined, undefined, [
+            ts.createParameter(undefined, undefined, undefined, ts.createIdentifier('x'), undefined, undefined, undefined)
+        ], undefined, ts.createToken(ts.SyntaxKind.EqualsGreaterThanToken), ts.createConditional(ts.createBinary(ts.createCall(ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')), undefined, [ts.createStringLiteral('.')]), ts.createToken(ts.SyntaxKind.BarBarToken), ts.createCall(ts.createPropertyAccess(ts.createIdentifier('x'), ts.createIdentifier('startsWith')), undefined, [ts.createStringLiteral('/')])), ts.createBinary(ts.createStringLiteral(TypeScriptLoaderPath + '?src='), ts.createToken(ts.SyntaxKind.PlusToken), ts.createPropertyAccess(ts.createNew(ts.createIdentifier('URL'), undefined, [
+            ts.createIdentifier('x'),
+            ts.createStringLiteral(baseURL)
+        ]), ts.createIdentifier('pathname'))), ts.createIdentifier('x')))), undefined, args)
+    ]);
 }

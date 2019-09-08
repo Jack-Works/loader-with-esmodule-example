@@ -2,8 +2,10 @@
     "compilerOptions": {
         "module": "esnext",
         "jsx": "react",
-        "allowJs": true,
         "target": "esnext",
-        "lib": ["dom", "esnext"]
-    }
+        "lib": ["esnext", "webworker", "webworker.importscripts"],
+        "strict": true,
+        "moduleResolution": "node"
+    },
+    "files": ["service-worker.ts"]
 }
