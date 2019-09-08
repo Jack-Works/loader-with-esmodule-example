@@ -1,6 +1,7 @@
 import { Remarkable } from 'https://cdn.pika.dev/remarkable/v2'
+import { parseSrc } from '../loader-utils/load.js'
 
-const src = new URL(import.meta.url).searchParams.get('src')
+const src = parseSrc(import.meta.url, location.origin)
 const container = document.createElement('p')
 
 console.log('Loading markdown', src)

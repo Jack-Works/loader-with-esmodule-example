@@ -1,4 +1,5 @@
-const src = new URL(import.meta.url).searchParams.get('src')
+import { parseSrc } from '../loader-utils/load.js'
+const src = parseSrc(import.meta.url, location.origin)
 console.log('Loading JSON', src)
 
 const req = new XMLHttpRequest()

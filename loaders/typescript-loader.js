@@ -1,6 +1,6 @@
-import { SyncXHR, parseSrc, fetchFile } from './loader-utils/load.js'
+import { SyncXHR, parseSrc, fetchFile } from '../loader-utils/load.js'
 
-const entryPoint = parseSrc(import.meta.url, import.meta.url)
+const entryPoint = parseSrc(import.meta.url, location.origin)
 console.log('Loading TypeScript', entryPoint)
 
 const $exports = Symbol('System JS exports')

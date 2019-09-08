@@ -21,6 +21,6 @@ export function fetchFile(src) {
  * @param {string} baseURL Base URL
  * @returns {string}
  */
-export function parseSrc(meta, baseURL) {
+export function parseSrc(meta, baseURL = location.origin) {
     return new URL(new URL(meta).searchParams.get('src'), baseURL).toJSON()
 }

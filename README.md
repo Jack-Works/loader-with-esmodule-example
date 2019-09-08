@@ -5,10 +5,10 @@ Transpile files without any build step in browser directly
 Just like using Webpack, we load files in this way
 
 ```js
-import README from './markdown-loader.js?src=./README.md'
-import css from './css-module-loader.js?src=./style.css'
-import tsconfig from './json-module-loader.js?src=./tsconfig.json'
-import App from './typescript-loader.js?src=./typescript-test/index.tsx'
+import README from '/loaders/markdown-loader.js?src=/README.md'
+import css from '/loaders/css-module-loader.js?src=/style.css'
+import tsconfig from '/loaders/json-module-loader.js?src=/tsconfig.json'
+import App from '/loaders/typescript-loader.js?src=/typescript-test/index.tsx'
 ```
 
 For the first time, it will loaded by the real "markdown-loader.js"

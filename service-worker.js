@@ -16,6 +16,7 @@ async function loadLoader(url, loader) {
 }
 addEventListener('fetch', e => {
     const url = new URL(e.request.url)
+    if (url.origin !== location.origin) return
     for (const loader of Loader.loaders) {
         if (url.pathname === loader.fallbackURL) {
             e.respondWith(loadLoader(url, loader))
@@ -46,7 +47,7 @@ class Loader {
 
 Loader.add(
     new Loader(
-        '/css-module-loader.js',
+        '/loaders/css-module-loader.js',
         async res =>
             `const container = new CSSStyleSheet()
 container.replace(${JSON.stringify(await res.text())})
@@ -55,14 +56,17 @@ export default container`
 )
 
 Loader.add(
-    new Loader('/json-module-loader.js', async res => `export default JSON.parse(${JSON.stringify(await res.text())})`)
+    new Loader(
+        '/loaders/json-module-loader.js',
+        async res => `export default JSON.parse(${JSON.stringify(await res.text())})`
+    )
 )
 globalThis.window = globalThis
 importScripts('https://unpkg.com/marked@0.7.0/marked.min.js')
 
 Loader.add(
     new Loader(
-        '/markdown-loader.js',
+        '/loaders/markdown-loader.js',
         async res => `const container = document.createElement('p')
 container.innerHTML = ${JSON.stringify(marked(await res.text()))}
 export default container`
@@ -73,9 +77,10 @@ globalThis.process = {
     argv: []
 }
 importScripts('https://www.unpkg.com/typescript@3.6.2/lib/typescript.js')
+const TypeScriptLoaderPath = '/loaders/typescript-loader.js'
 Loader.add(
     new Loader(
-        '/typescript-loader.js',
+        TypeScriptLoaderPath,
         async res =>
             ts.transpileModule(await res.text(), {
                 compilerOptions: {
@@ -98,9 +103,9 @@ function importTransformer(baseURL) {
             if (ts.isImportDeclaration(node)) {
                 let nextModuleSpecifier
                 if (ts.isStringLiteral(node.moduleSpecifier)) {
-                    if (node.moduleSpecifier.text.startsWith('/') || node.moduleSpecifier.text.startsWith('.')) {
+                    if (node.moduleSpecifier.text[0] === '/' || node.moduleSpecifier.text[0] === '.') {
                         nextModuleSpecifier = ts.createStringLiteral(
-                            '/typescript-loader.js?src=' + new URL(node.moduleSpecifier.text, baseURL)
+                            TypeScriptLoaderPath + '?src=' + new URL(node.moduleSpecifier.text, baseURL)
                         )
                     } else {
                         // unknown source
@@ -161,7 +166,7 @@ function transformDynamicImport(args, baseURL) {
                             )
                         ),
                         ts.createBinary(
-                            ts.createStringLiteral('/typescript-loader.js?src='),
+                            ts.createStringLiteral(TypeScriptLoaderPath + '?src='),
                             ts.createToken(ts.SyntaxKind.PlusToken),
                             ts.createPropertyAccess(
                                 ts.createNew(ts.createIdentifier('URL'), undefined, [
