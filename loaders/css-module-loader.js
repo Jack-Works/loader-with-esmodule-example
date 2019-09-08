@@ -1,11 +1,21 @@
 import { parseSrc } from '../loader-utils/load.js'
-const src = parseSrc(import.meta.url, location.origin)
-const container = new CSSStyleSheet()
+export default typeof document === 'object' ? runtimeCompile() : undefined
 
-console.log('Loading css', src)
+function runtimeCompile() {
+    const src = parseSrc(import.meta.url, location.origin)
+    const css = new CSSStyleSheet()
 
-fetch(src)
-    .then(x => x.text())
-    .then(x => container.replace(x))
+    fetch(src)
+        .then(x => x.text())
+        .then(x => css.replace(x))
+    return css
+}
 
-export default container
+/**
+ * @param {Response} res
+ */
+export async function swCompile(res) {
+    return `const css = new CSSStyleSheet()
+css.replace(${JSON.stringify(await res.text())})
+export default css`
+}

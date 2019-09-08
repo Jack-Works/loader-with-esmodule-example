@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "esnext",
+        "lib": ["esnext", "webworker"],
+        "strict": true,
+        "moduleResolution": "node",
+        "noEmit": true,
+        "allowJs": true
+    },
+    "files": ["./service-worker.ts", "../global.d.ts"]
+}

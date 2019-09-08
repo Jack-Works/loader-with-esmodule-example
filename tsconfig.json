@@ -1,11 +1,10 @@
 {
     "compilerOptions": {
         "module": "esnext",
-        "jsx": "react",
         "target": "esnext",
-        "lib": ["esnext", "webworker", "webworker.importscripts"],
+        "lib": ["esnext", "dom"],
         "strict": true,
         "moduleResolution": "node"
     },
-    "files": ["service-worker.ts"]
+    "include": ["loader-utils/*", "loaders/*", "typescript-serviceworker-loader.js"]
 }

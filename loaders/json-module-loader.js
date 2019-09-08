@@ -1,8 +1,14 @@
-import { parseSrc } from '../loader-utils/load.js'
-const src = parseSrc(import.meta.url, location.origin)
-console.log('Loading JSON', src)
+import { parseSrc, fetchFileSync } from '../loader-utils/load.js'
+export default typeof document === 'object' ? runtimeCompile() : undefined
 
-const req = new XMLHttpRequest()
-req.open('GET', src, false)
-req.send(null)
-export default JSON.parse(req.responseText)
+function runtimeCompile() {
+    const src = parseSrc(import.meta.url, location.origin)
+    return JSON.parse(fetchFileSync(src))
+}
+
+/**
+ * @param {Response} res
+ */
+export async function swCompile(res) {
+    return `export default JSON.parse(${JSON.stringify(await res.text())})`
+}

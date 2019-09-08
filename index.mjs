@@ -8,10 +8,13 @@ console.log('Loaded by JSON import', tsconfig)
 document.body.appendChild(document.createElement('div')).appendChild(README)
 document.adoptedStyleSheets = [css]
 
-navigator.serviceWorker
-    .register('./service-worker.js', {
-        // DOMException: "type 'module' in RegistrationOptions is not implemented yet.
-        // See https://crbug.com/824647 for details."
-        // type: 'module'
-    })
-    .then(sw => console.log('Service worker registered!'), e => console.error((window.e = e)))
+navigator.serviceWorker.register('/typescript-serviceworker-loader.js').then(
+    sw => {
+        console.log('Service worker registered!')
+    },
+    async err => {
+        console.error(err)
+        const sw = await navigator.serviceWorker.getRegistration('/typescript-serviceworker-loader.js')
+        if (sw) sw.unregister()
+    }
+)

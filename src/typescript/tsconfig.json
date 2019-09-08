@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "esnext",
+        "lib": ["esnext"],
+        "strict": true,
+        "moduleResolution": "node",
+        "declaration": true,
+        "outDir": "../../loader-utils"
+    },
+    "files": ["./typescript-shared-compiler.ts", "../global.d.ts"]
+}
