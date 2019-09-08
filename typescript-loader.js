@@ -33,10 +33,11 @@ class Module {
             Object.freeze({
                 meta: Object.freeze({ url: new URL(this.src).toJSON() }),
                 import: src => {
-                    const cached = LoadedModules.get(resolveImportMap(new URL(src, this.src)))
+                    const resolvedPath = resolveImportMap(new URL(src, this.src).toJSON())
+                    const cached = LoadedModules.get(resolvedPath)[$exports]
                     if (cached) return Promise.resolve(cached)
-                    return fetchFile(src)
-                        .then(code => loadModule(new URL(src, this.src).toJSON(), code))
+                    return fetchFile(resolvedPath)
+                        .then(code => loadModule(resolvedPath, code))
                         .then(x => x[$exports])
                 }
             })
