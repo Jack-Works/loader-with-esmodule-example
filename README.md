@@ -1,5 +1,7 @@
 # loader-with-esmodule-example
 
+See the blog at https://jack-works.github.io/bayesian-conspiracy/#/./experiments/2019/sept-loader-in-browser.md
+
 Transpile files without any build step in browser directly
 
 Just like using Webpack, we load files in this way
